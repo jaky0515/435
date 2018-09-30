@@ -1,0 +1,6 @@
+Part One:  Written questions  [25 points]
+1.  When a long message gets encrypted with Substitution Cipher method, vowel characters, especially the English letter 'e' tends to appear significantly more frequent than other alphabets. Therefore, an adversary can assume that the character that appears the most in the cipher text is the English letter 'e'.
+
+2. If use of a single one-time pad offers perfect secrecy, we can assume that an adversary doesn't know what this pad is. Therefore, although an adversary has a knowledge on the second pad and a cipher text, a plain text cannot be calculated. 
+
+3.  AES encryption algorithm in ECB mode. Is this a good choice? Give two reasons why or why not.
