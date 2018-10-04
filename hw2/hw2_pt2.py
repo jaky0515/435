@@ -1,11 +1,10 @@
-import socket, sys, select, argparse, signal, hashlib
+import socket, sys, select, argparse, signal, hashlib, hmac
 from Crypto.Hash import SHA256
 from Crypto.Cipher import AES
 from Crypto import Random
 from pprint import pprint
 
-key_size_bits = 256
-key_size_bytes = 32
+listen_socket = None
 
 """
 this function exits the program
@@ -25,25 +24,53 @@ def get_args():
 	# collect all the arguments from the parser
 	return parser.parse_args()
 
-def get_aes_enc_cipher(confkey, iv):
+def create_aes_cipher(confkey, iv, mode):
 	# AES-256-CBC AESCipher object
-	aes_cipher = AES.new(confkey, AES.MODE_CFB, iv)
-	print("{}".format(iv))
+	aes_cipher = AES.new(confkey, mode, iv)
 	return aes_cipher
 
-def aes_decrypt(confkey, cipher_msg):
-	# extract initialization vector from the cipher message
+def aes_encrypt(confkey, authkey, plain_msg, mode):
+	# create AESCipher object with random generated IV
+	iv = Random.new().read(AES.block_size)
+	aes_cipher = create_aes_cipher(confkey, iv, mode)
+	# add padding to a plain message and encrypt padded message and add IV
+	cipher_msg = iv + aes_cipher.encrypt( pad(plain_msg, AES.block_size) )
+	# create signature using HMAC
+	sign = hmac.new(authkey, cipher_msg, hashlib.sha256).digest()
+	return cipher_msg + sign
+
+def aes_decrypt(confkey, authkey, cipher, mode):
+	# split the cipher to get signatrure and cipher message
+	rec_sign = cipher[-(hashlib.sha256().digest_size):]
+	cipher_msg = cipher[:-(hashlib.sha256().digest_size)]
+	# validate received signature
+	check_sign( hmac.new(authkey, cipher_msg, hashlib.sha256).digest(), rec_sign )
+	# create AESCipher object using the data received
 	iv = cipher_msg[:AES.block_size]
-	print("{}".format(iv))
-	# AES-256-CBC AESCipher object
-	aes_cipher = AES.new(confkey, AES.MODE_CBC, iv)
-	print("cipher_msg = {}".format(cipher_msg[AES.block_size:]))
-	return aes_cipher.decrypt(cipher_msg[AES.block_size:])
+	aes_cipher = create_aes_cipher(confkey, iv, mode)
+	# decrypt to get padded message and unpad that message to get a plain message
+	return unpad( aes_cipher.decrypt(cipher_msg[AES.block_size:]) )
+
+def pad(msg, block_size):
+	pad_len = block_size - (len(msg) % block_size)
+	msg += chr(pad_len) * pad_len
+	return msg
+
+def unpad(msg):
+	return msg[:-ord(msg[-1])]
+
+def check_sign(my_sign, rec_sign):
+	global listen_socket
+	if not hmac.compare_digest(my_sign, rec_sign):
+		raise Exception('Invalid signature detected! Exiting...')
+		exit_program(listen_socket)
 
 """
 main function
 """
 def main():
+	global listen_socket
+
 	"""
 	this function handles CTRL+C
 	"""
@@ -59,13 +86,6 @@ def main():
 	# SHA-256 hash on keys to force the size to be equal to 256; convert each string key to a byte string
 	confkey_256 = hashlib.sha256(args.confkey.encode()).digest()
 	authkey_256 = hashlib.sha256(args.authkey.encode()).digest()
-
-	# initialization vector for AES-256-CBC encryption
-	iv_enc = Random.new().read(AES.block_size)
-	# use confidentiality key for AES-256-CBC encryption
-	aes_enc_cipher = get_aes_enc_cipher(confkey_256, iv_enc)
-
-	# use authenticity key to compute the SHA-256-based HMAC (encrypt-then-MAC scheme)
 
 	listen_socket = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
 
@@ -90,26 +110,23 @@ def main():
 					if len(data) == 0:
 						exit_program(listen_socket)
 					else:
-						# sys.stdout.write("{} | {}\n".format(aes_dec_cipher.decrypt(data.rstrip()), data.rstrip()))
-						sys.stdout.write("{}".format(aes_decrypt(confkey_256, data.rstrip())))
+						sys.stdout.write("{}\n".format(aes_decrypt(confkey_256, authkey_256, data.rstrip(), AES.MODE_CBC)))
 				else:
 					connected_client, addr = ready.accept()
 					connected_clients.append(connected_client)
 				is_connected = True
 			elif ready is sys.stdin:
-				plain_msg = raw_input()
-				cipher_msg = iv_enc + aes_enc_cipher.encrypt(plain_msg)
+				cipher = aes_encrypt(confkey_256, authkey_256, raw_input(), AES.MODE_CBC)
 				if args.wait is True:
-					connected_client.send(cipher_msg)
+					connected_client.send(cipher)
 				else:
-					listen_socket.send(cipher_msg)
+					listen_socket.send(cipher)
 			else:
 				data = ready.recv(1024)
 				if len(data) == 0:
 					exit_program(listen_socket)
 				else:
-					# sys.stdout.write("{} | {}\n".format(aes_dec_cipher.decrypt(data.rstrip()), data.rstrip()))
-					sys.stdout.write("{}".format(aes_decrypt(confkey_256, data.rstrip())))
+					sys.stdout.write("{}\n".format(aes_decrypt(confkey_256, authkey_256, data.rstrip(), AES.MODE_CBC)))
 
 if __name__ == "__main__":
 	main()
