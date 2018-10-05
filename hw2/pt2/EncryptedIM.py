@@ -35,7 +35,7 @@ def aes_encrypt(confkey, authkey, plain_msg, mode):
 	aes_cipher = create_aes_cipher(confkey, iv, mode)
 	# add padding to a plain message and encrypt padded message and add IV
 	cipher_msg = iv + aes_cipher.encrypt( pad(plain_msg, AES.block_size) )
-	# create signature using HMAC
+	# create signature using HMAC (encrypt-then-MAC)
 	sign = hmac.new(authkey, cipher_msg, hashlib.sha256).digest()
 	return cipher_msg + sign
 

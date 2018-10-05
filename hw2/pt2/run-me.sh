@@ -8,7 +8,7 @@
 # arguments are passed to run-me.sh will be passed again to the Python
 # program called hw1.py.
 
-python -u hw2_pt2.py $@
+python -u EncryptedIM.py $@
 
 # but that's for python.  If you did it in C and you produced a program
 # called hw1, then it'd be more like:

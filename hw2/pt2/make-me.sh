@@ -12,4 +12,4 @@ exit 0
 # like if I did my assignment in C.  (In which case I'd remove the lines
 # above this, since I don't want my shell script to exit (see line 9).)
 
-gcc -Wall -g hw2_pt2.c -o hw2_pt2
+gcc -Wall -g EncryptedIM.c -o EncryptedIM
