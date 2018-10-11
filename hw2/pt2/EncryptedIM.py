@@ -1,3 +1,8 @@
+"""
+this file contains python code for HW2 part 2
+@author: Kevin Jang (kj460)
+"""
+
 import socket, sys, select, argparse, signal, hashlib, hmac
 from Crypto.Hash import SHA256
 from Crypto.Cipher import AES
@@ -13,6 +18,9 @@ def exit_program(socket):
 	socket.close()
 	exit(0)
 
+"""
+this function controls the argument parameters
+"""
 def get_args():
 	parser = argparse.ArgumentParser()
 	# list of possible arguments
@@ -24,11 +32,17 @@ def get_args():
 	# collect all the arguments from the parser
 	return parser.parse_args()
 
+"""
+this function creates AES-256-CBC AESCipher object and return it
+"""
 def create_aes_cipher(confkey, iv, mode):
 	# AES-256-CBC AESCipher object
 	aes_cipher = AES.new(confkey, mode, iv)
 	return aes_cipher
 
+"""
+this function performs an AES encryption and returns a cipher text
+"""
 def aes_encrypt(confkey, authkey, plain_msg, mode):
 	# create AESCipher object with random generated IV
 	iv = Random.new().read(AES.block_size)
@@ -39,6 +53,9 @@ def aes_encrypt(confkey, authkey, plain_msg, mode):
 	sign = hmac.new(authkey, cipher_msg, hashlib.sha256).digest()
 	return cipher_msg + sign
 
+"""
+this function performs an AES decryption and returns a plain text
+"""
 def aes_decrypt(confkey, authkey, cipher, mode):
 	# split the cipher to get signatrure and cipher message
 	rec_sign = cipher[-(hashlib.sha256().digest_size):]
@@ -51,14 +68,23 @@ def aes_decrypt(confkey, authkey, cipher, mode):
 	# decrypt to get padded message and unpad that message to get a plain message
 	return unpad( aes_cipher.decrypt(cipher_msg[AES.block_size:]) )
 
+"""
+this function addes padding to a message and return it
+"""
 def pad(msg, block_size):
 	pad_len = block_size - (len(msg) % block_size)
 	msg += chr(pad_len) * pad_len
 	return msg
 
+"""
+this function removes padding from a padded message and return it
+"""
 def unpad(msg):
 	return msg[:-ord(msg[-1])]
 
+"""
+this function verifies the signature
+"""
 def check_sign(my_sign, rec_sign):
 	global listen_socket
 	if not hmac.compare_digest(my_sign, rec_sign):
@@ -116,6 +142,7 @@ def main():
 					connected_clients.append(connected_client)
 				is_connected = True
 			elif ready is sys.stdin:
+				# gets a cipher text
 				cipher = aes_encrypt(confkey_256, authkey_256, raw_input(), AES.MODE_CBC)
 				if args.wait is True:
 					connected_client.send(cipher)
