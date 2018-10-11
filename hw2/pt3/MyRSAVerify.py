@@ -3,7 +3,6 @@ This file contains python code for HW2 part3 verify
 @author: Kevin Jang (kj460)
 """
 
-
 import json, argparse, hashlib, sys
 
 """

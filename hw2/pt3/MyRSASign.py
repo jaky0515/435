@@ -49,7 +49,9 @@ def main():
 
 	privkey_data = load_json(privkey_file_name)
 	sign = create_sign(privkey_data['d'], privkey_data['n'], int(hashlib.sha256(msg).hexdigest(),16))
-	write_json({'sig': sign, 'm': msg}, 'mysig.json')
+	json_dict = {'sig': sign, 'm': msg}
+	write_json(json_dict, 'mysig.json')
+	print json.dumps(json_dict)
 
 if __name__ == "__main__":
 	main()
