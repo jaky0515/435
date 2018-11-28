@@ -1,3 +1,9 @@
+'''
+This file contains the python code that train the model using the training pcap data-set and test the built model using the test pcap data-set to make its prediction
+@author: Kevin Jang (kj460)
+@last_updated: 11/28/18
+'''
+
 from scapy.all import *
 from pprint import pprint
 import sys
