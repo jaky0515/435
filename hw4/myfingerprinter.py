@@ -4,7 +4,15 @@ import sys
 
 def read_pcap_file( file_name ):
 	'''
-	https://medium.com/@vworri/extracting-the-payload-from-a-pcap-file-using-python-d938d7622d71
+	This function reads pcap file and return its features. 
+	Used this page (https://medium.com/@vworri/extracting-the-payload-from-a-pcap-file-using-python-d938d7622d71) as a reference
+	@param:
+		file_name - name of the pcap file
+	@return:
+		num_in_packets - number of inbound packets
+		num_out_packets - number of outbound packets
+		first_packet_timestamp - timestamp of the first packet
+		last_packet_timestamp - timestamp of the last packet
 	'''
 	sessions = rdpcap( file_name ).sessions()
 	num_in_packets = 0
@@ -32,7 +40,9 @@ def read_pcap_file( file_name ):
 			
 def train():
 	'''
-		
+	This function trains the model using the provided training data-set and return the model information
+	@return:
+		model_info - dictionary that contains the averaged feature values of each site
 	'''
 	print( '** Start training...' )
 	pcap_file_names = [
@@ -63,6 +73,14 @@ def train():
 	return model_info
 
 def test( file_name, model_info ):
+	'''
+	This function test the model using the given test file and return its prediction
+	@param:
+		file_name - name of the test pcap file
+		model_info - dictionary that contains the averaged feature values of each site
+	@return:
+		predicted site label
+	'''
 	print( '** Start testing...' )
 	print( '\t* Reading {}...'.format( file_name ) )
 	num_in_packets, num_out_packets, first_packet_timestamp, last_packet_timestamp = read_pcap_file( file_name )
@@ -78,15 +96,18 @@ def test( file_name, model_info ):
 		# calculate the average distance
 		test_result[ site ] = ( norm_distances[ 0 ] + norm_distances[ 1 ] + norm_distances[ 2 ] ) / float( len( norm_distances ) )
 
-	matching_site = None
-	matching_site_val = None
+	predicted_site = None
+	predicted_site_val = None
 	for site in test_result:
-		if not matching_site or matching_site_val > test_result[ site ]:
-			matching_site = site
-			matching_site_val = test_result[ site ]
-	return matching_site
+		if not predicted_site or predicted_site_val > test_result[ site ]:
+			predicted_site = site
+			predicted_site_val = test_result[ site ]
+	return predicted_site
 
 def main():
+	'''
+	This is the main driver function
+	'''
 	# validation
 	if len( sys.argv ) != 2:
 		print( "Error: test file name is not provided! Terminating...\n" )
